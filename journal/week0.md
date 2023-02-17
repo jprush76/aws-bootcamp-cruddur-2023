@@ -204,3 +204,5 @@ I personally created this two files in the aws/JSON folder. This is very importa
         --budget file://aws/JSON/budget.json \
         --notifications-with-subscribers file://aws/JSON/budget-notifications-with-subscribers.json
 ```
+
+![Budget created](./assets/week-0-budget-created-aws.png)
