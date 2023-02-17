@@ -206,3 +206,10 @@ I personally created this two files in the aws/JSON folder. This is very importa
 ```
 
 ![Budget created](./assets/week-0-budget-created-aws.png)
+
+
+## Organizational Structure
+
+I created an organizational structure in my account so I can separate costs in the future for every business unit.
+
+![Organizational Structure](./assets/week-0-organizational-structure-aws.png)
