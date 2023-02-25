@@ -1,5 +1,116 @@
 # Week 1 — App Containerization
 
+## Containerize Application
+
+### Dockerfile Backend
+
+```docker
+FROM python:3.10-slim-buster
+
+# Inside container
+# make a new folder inside container
+WORKDIR /backend-flask
+
+# Outside Container -> Inside Container
+# this contains the libraries want to install to run the app
+COPY requirements.txt requirements.txt
+
+# inside Container
+# Install the python libraries used for the app
+RUN pip3 install -r requirements.txt
+
+# . means everything in the current directory
+# first period /backend-flask (outside container)
+# second period /backend-flask (inside container)
+COPY . .
+
+# Environment variables (Env vars)
+ENV FLASK_ENV=development
+
+EXPOSE ${PORT}
+
+# python3 -m flask run --host=0.0.0.0 --port=4567
+CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
+```
+
+### Dockerfile Frontend
+
+```docker
+FROM node:16.18
+
+ENV PORT=3000
+
+COPY . /frontend-react-js
+WORKDIR /frontend-react-js
+RUN npm install
+EXPOSE ${PORT}
+CMD ["npm", "start"]
+
+```
+
+### docker-compose for multiple containers
+```docker
+version: "3.8"
+services:
+  backend-flask:
+    environment:
+      FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+    build: ./backend-flask
+    ports:
+      - "4567:4567"
+    volumes:
+      - ./backend-flask:/backend-flask
+  frontend-react-js:
+    environment:
+      REACT_APP_BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+    build: ./frontend-react-js
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-react-js:/frontend-react-js
+
+# the name flag is a hack to change the default prepend folder
+# name when outputting the image names
+networks: 
+  internal-network:
+    driver: bridge
+    name: cruddur
+```
+
+## Project Snyk verification for vulnerabilities
+
+I did a scan of the repository with Snyk, looking for vulnerabilities, and I found several vulnerabilities, with diferent types of severity.
+
+The primary problem of the repository, is the Node image that the container is loading.
+
+If we change the node version, we can solve the majority of the issues.
+
+Screenshot:
+
+![Snyk result for the repository](./assets/week-1-snyk-aws-cruddur-vulnerabilities.png)
+
+
+## Adding an Endpoint for notifications
+
+I successfully added an Endpoint to the backend for notifications.
+`/api/activities/notifications`
+
+Screenshot of the endpoint giving out notifications data:
+
+![Screenshot of the endpoint giving out notifications data](./assets/week-1-backend-notifications-route.png)
+
+
+## Adding a notifications page in the frontend
+
+I successfully added a notifications page in the frontend.
+`/notifications`
+
+Screenshot of the notifications page in the frontend with data:
+
+![Screenshot of the notifications page in the frontend with data](./assets/week-1-frontend-notifications-page.png)
+
+
 ## Add Postgres
 
 As we need to use `Postgres` locally, I add it by a container. So here it is the code that we need to add to our docker compose file:
