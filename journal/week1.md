@@ -10,12 +10,12 @@ As we need to use `Postgres` locally, I add it by a container. So here it is the
         image: postgres:13-alpine
         restart: always
         environment:
-        - POSTGRES_USER=postgres
-        - POSTGRES_PASSWORD=password
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=password
         ports:
-        - '5432:5432'
+            - '5432:5432'
         volumes: 
-        - db:/var/lib/postgresql/data
+            - db:/var/lib/postgresql/data
     volumes:
     db:
         driver: local
@@ -48,3 +48,72 @@ If you want to use `Postgres` client in gitpod, you need to install it first. So
 Then to start `Postgres` client you need to use `psql --host localhost`
 
 ![Connecting to postgres from the terminal client](./assets/week-1-postgres%20test%20cli.png)
+
+
+## Install Dynamo DB Local
+Same as `Postgres` I added Dynamo DB thru containers. Add this code to your `docker-compose.yml` file:
+
+```yaml
+services:
+    dynamodb-local:
+        # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
+        # We needed to add user:root to get this working.
+        user: root
+        command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+        image: "amazon/dynamodb-local:latest"
+        container_name: dynamodb-local
+        ports:
+            - "8000:8000"
+        volumes:
+            - "./docker/dynamodb:/home/dynamodblocal/data"
+        working_dir: /home/dynamodblocal
+```
+
+Once your Dynamo DB container is running, you can:
+
+### Create a table
+
+```bash
+aws dynamodb create-table \
+    --endpoint-url http://localhost:8000 \
+    --table-name Music \
+    --attribute-definitions \
+        AttributeName=Artist,AttributeType=S \
+        AttributeName=SongTitle,AttributeType=S \
+    --key-schema AttributeName=Artist,KeyType=HASH AttributeName=SongTitle,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1 \
+    --table-class STANDARD
+```
+
+### Create an Item
+
+```bash
+aws dynamodb put-item \
+    --endpoint-url http://localhost:8000 \
+    --table-name Music \
+    --item \
+        '{"Artist": {"S": "No One You Know"}, "SongTitle": {"S": "Call Me Today"}, "AlbumTitle": {"S": "Somewhat Famous"}}' \
+    --return-consumed-capacity TOTAL  
+```
+
+### List Tables
+
+```bash
+aws dynamodb list-tables --endpoint-url http://localhost:8000
+```
+
+### Get Records
+```bash
+aws dynamodb scan --table-name Music --query "Items" --endpoint-url http://localhost:8000
+```
+
+__Screenshoot of dynamo DB running and working in gitpod:__
+
+![](./assets/week-1-dynamodb-local-working.png)
+
+### References
+[https://github.com/100DaysOfCloud/challenge-dynamodb-local](https://github.com/100DaysOfCloud/challenge-dynamodb-local)
+
+[https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)
+
+[https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.CLI.html](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.CLI.html)
