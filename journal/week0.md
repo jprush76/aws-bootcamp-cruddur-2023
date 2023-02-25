@@ -74,7 +74,7 @@ So, now that it's working I check with this line of code in the terminal.
 ```bash
     aws sts get-caller-identity
 ```
-Here is the screenshoot of the AWS CLI working in gitpod.
+Here is the screenshot of the AWS CLI working in gitpod.
 ![AWS CLI Working in gitpod](./assets/week-0-gitpod-aws-cli-config.png)
 
 ![AWS CLI Working in gitpod](./assets/week-0-gitpod-aws-cli-working.png)

@@ -218,7 +218,7 @@ aws dynamodb list-tables --endpoint-url http://localhost:8000
 aws dynamodb scan --table-name Music --query "Items" --endpoint-url http://localhost:8000
 ```
 
-__Screenshoot of dynamo DB running and working in gitpod:__
+__Screenshot of dynamo DB running and working in gitpod:__
 
 ![](./assets/week-1-dynamodb-local-working.png)
 
