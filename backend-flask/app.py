@@ -14,6 +14,12 @@ from services.create_message import *
 from services.show_activity import *
 from services.notifications_activities import *
 
+# rollbar
+import os
+import rollbar
+import rollbar.contrib.flask
+from flask import got_request_exception
+
 # Honeycomb
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -33,6 +39,24 @@ processor = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
+
+# Rollbar
+rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
+@app.before_first_request
+def init_rollbar():
+    """init rollbar module"""
+    rollbar.init(
+        # access token
+        rollbar_access_token,
+        # environment name
+        'production',
+        # server root directory, makes tracebacks prettier
+        root=os.path.dirname(os.path.realpath(__file__)),
+        # flask already sets up logging
+        allow_logging_basic_config=False)
+
+    # send exceptions from `app` to rollbar, using flask's signal system.
+    got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
 
 # X-ray
 xray_url = os.getenv("AWS_XRAY_URL")
@@ -58,6 +82,12 @@ cors = CORS(
   allow_headers="content-type,if-modified-since",
   methods="OPTIONS,GET,HEAD,POST"
 )
+
+# Rollbar test
+@app.route('/rollbar/test')
+def rollbar_test():
+    rollbar.report_message('Hello World!', 'warning')
+    return "Hello World!"
 
 @app.route("/api/message_groups", methods=['GET'])
 def data_message_groups():
