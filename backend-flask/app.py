@@ -43,8 +43,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # X-ray
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+# from aws_xray_sdk.core import xray_recorder
+# from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
 # Honeycomb
 # Initialize tracing and an exporter that can send data to Honeycomb
@@ -55,14 +55,14 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 # X-ray
-xray_url = os.getenv("AWS_XRAY_URL")
-xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
+# xray_url = os.getenv("AWS_XRAY_URL")
+# xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
 
 
 app = Flask(__name__)
 
 # X-ray
-XRayMiddleware(app, xray_recorder)
+# XRayMiddleware(app, xray_recorder)
 
 #Honeycomb
 FlaskInstrumentor().instrument_app(app)
@@ -104,11 +104,11 @@ def rollbar_test():
     return "Hello World!"
 
 # Cloudwatch Logs
-@app.after_request
-def after_request(response):
-    timestamp = strftime('[%Y-%b-%d %H:%M]')
-    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
-    return response
+# @app.after_request
+# def after_request(response):
+#     timestamp = strftime('[%Y-%b-%d %H:%M]')
+#     LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+#     return response
 
 @app.route("/api/message_groups", methods=['GET'])
 def data_message_groups():
@@ -157,7 +157,7 @@ def data_notifications():
   return data, 200
 
 @app.route("/api/activities/@<string:handle>", methods=['GET'])
-@xray_recorder.capture('activities_users')
+# @xray_recorder.capture('activities_users')
 def data_handle(handle):
   model = UserActivities.run(handle)
   if model['errors'] is not None:
