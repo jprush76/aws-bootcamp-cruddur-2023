@@ -2,6 +2,7 @@ import './App.css';
 
 import HomeFeedPage from './pages/HomeFeedPage';
 import NotificationsFeedPage from './pages/NotificationsFeedPage';
+import SearchFeedPage from './pages/SearchFeedPage';
 import UserFeedPage from './pages/UserFeedPage';
 import SignupPage from './pages/SignupPage';
 import SigninPage from './pages/SigninPage';
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
   {
     path: "/notifications",
     element: <NotificationsFeedPage />
+  },
+  {
+    path: "/search",
+    element: <SearchFeedPage />
   },
   {
     path: "/@:handle",
