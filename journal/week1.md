@@ -1,6 +1,6 @@
 # Week 1 — App Containerization
 
-## Containerize Application
+ ## Containerize Application
 
 ### Dockerfile Backend
 
