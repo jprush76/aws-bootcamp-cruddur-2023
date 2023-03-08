@@ -270,3 +270,79 @@ You can click on a trace to see details:
 
 ![sub segment details](./assets/week-2-xray-traces-subsegment-ok.png)
 
+## Cloudwatch Logs
+
+Ok, now we are going to install Cloudwatch Logs in our backend. 
+
+Cloudwatch logs enables you to see all of your logs, as a single and consistent flow of event ordered by time, and you can query them and sort them.
+
+Add this line to the `requirements.txt` file in our backend-flask folder:
+
+```
+watchtower
+```
+
+Then we will install this dependency with this command in our terminal. IMPORTANT: To run this line, first we'll navigate into the folder `backend-flask` with the `cd` command.
+
+```bash
+pip install -r requirements.txt
+```
+
+Then, add these lines into our `app.py` file:
+
+```py
+# Cloudwatch Logs
+import watchtower
+import logging
+from time import strftime
+
+# Configuring Logger to Use CloudWatch
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+cw_handler = watchtower.CloudWatchLogHandler(log_group='cruddur')
+LOGGER.addHandler(console_handler)
+LOGGER.addHandler(cw_handler)
+LOGGER.info("Testing App.py")
+```
+( Last line is for testing )
+
+Add these lines in the same file. I did it before the routes def..
+
+```py
+# Cloudwatch Logs
+@app.after_request
+def after_request(response):
+    timestamp = strftime('[%Y-%b-%d %H:%M]')
+    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+    return response
+```
+
+Now, select a route to trace with cloudwatch, I chose `/api/activities/home`. Replace the line `data = HomeActivities.run()` with the following line:
+
+```py
+data = HomeActivities.run(logger = LOGGER)
+```
+
+Next, open the file `home_activities.py` in the folder `services` and replace the line `def run():` with:
+
+```py
+def run(logger):
+```
+
+Right at the begining of the `run(logger)` function, insert this line:
+
+```py
+logger.info('Hello Cloudwatch! from  /api/activities/home')
+```
+
+With this, we are ready to start receiving date in our cloudwatch logs dashboard. Start the project with the command `docker compose up`.
+
+You will see something like this on cloudwatch when start receiving data from the project.
+
+![](./assets/week-2-cloudwatch-logs-log-streams-ok.png)
+
+You can click on a log stream at the bottom of the page:
+
+![](./assets/week-2-cloudwatch-logs-log-event-from-home-activities-ok.png)
+
