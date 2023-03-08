@@ -136,3 +136,137 @@ In the search backend service, I did something different, I created an attribute
 ![Search activities service](./assets/week-2-honeycomb-trace-and-spans-search-activities-ok.png)
 
 
+## AWS X-ray
+
+Ok x-ray was frankly a pain to implement!
+
+First, we create an env var for our aws region, if you don't have it already. 
+
+```
+export AWS_REGION="us-east-1"
+gp env AWS_REGION="us-east-1"
+```
+
+Then, in our `backend` folder, we add this line to `requirements.txt` file.
+
+```
+aws-xray-sdk
+```
+
+Then we will install this dependency with this command in our terminal. IMPORTANT: To run this line, first we'll navigate into the folder `backend-flask` with the `cd` command.
+
+```bash
+pip install -r requirements.txt
+```
+
+Add these lines to `app.py`. Insert them before `app = Flask(__name__)`
+
+```py
+# X-ray
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
+```
+
+And after `app = Flask(__name__)` insert this line:
+
+```py
+# X-ray
+XRayMiddleware(app, xray_recorder)
+```
+
+Next, we'll create a `xray.json` file inside our `aws/JSON` folder:
+
+```json
+{
+    "SamplingRule": {
+        "RuleName": "Cruddur",
+        "ResourceARN": "*",
+        "Priority": 9000,
+        "FixedRate": 0.1,
+        "ReservoirSize": 5,
+        "ServiceName": "backend-flask",
+        "ServiceType": "*",
+        "Host": "*",
+        "HTTPMethod": "*",
+        "URLPath": "*",
+        "Version": 1
+    }
+}
+```
+
+Now we need to create an AWS x-ray group. Run this line in the terminal.
+
+```bash
+aws xray create-group \
+   --group-name "Cruddur" \
+   --filter-expression "service(\"backend-flask\")"
+```
+
+Next, we create a sampling rule. The rule info is in our json file we created minutes ago.
+
+```bash
+aws xray create-sampling-rule --cli-input-json file://aws/JSON/xray.json
+```
+
+### ADD X-RAY Daemon with a container to the project
+
+Add these lines in our `docker-compose.yml`:
+
+```yaml
+xray-daemon:
+    image: "amazon/aws-xray-daemon"
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_REGION: "us-east-1"
+    command:
+      - "xray -o -b xray-daemon:2000"
+    ports:
+      - 2000:2000/udp
+```
+
+Now we need to add these two env vars in the backend section. Inside `Service -> backend-flask -> environment`.
+
+### Adding x-ray in the code to collect data from the backend.
+
+In our `app.py`, add this line, in the route we want to trace for start capturing. I did it in `/api/activities/@<string:handle>`. Right after `@app.route`
+
+```py
+@xray_recorder.capture('activities_users')
+```
+
+Now, at the top of `user_activities.py` file, insert this line:
+
+```py
+from aws_xray_sdk.core import xray_recorder
+```
+
+Then, right after `def run(user_handle):` insert:
+
+```py
+# Start a subsegment XRAY
+xray_recorder.begin_subsegment('user_activity_' + user_handle)
+```
+
+The last line, will begin recorder, and I use the user_handle in the subsegment to know who user was.
+
+To stop or ending the subsegment we inert this line at the bottom of the file, before the `return` statement:
+
+```py
+# XRAY
+xray_recorder.end_subsegment()
+```
+
+With this done, the only thing we need to do, is a `docker compose up` to start the containers. When everything is up, go to the frontend and go to Andrew Brown's page to start showing data in x-ray dashboard. Refresh several times.
+
+In AWS x-ray (Cloudwatch) you will see something like this, with the different traces at the bottom:
+
+![X-ray data](./assets/week-2-xray-traces-ok.png)
+
+You can click on a trace to see details:
+
+![sub segment details](./assets/week-2-xray-traces-subsegment-ok.png)
+
