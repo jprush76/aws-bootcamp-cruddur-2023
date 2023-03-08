@@ -346,3 +346,83 @@ You can click on a log stream at the bottom of the page:
 
 ![](./assets/week-2-cloudwatch-logs-log-event-from-home-activities-ok.png)
 
+
+## Rollbar
+
+Now, we are going to install Rollbar into our project. Rollbar is an excelent solution to track errors. [rollbar.com](https://rollbar.com/)
+
+Add these two lines to the `requirements.txt` file inside the `backend-flask` folder.
+
+```
+blinker
+rollbar
+```
+
+Now, we will install these dependency with this command in our terminal. IMPORTANT: To run this line, first we'll navigate into the folder `backend-flask` with the `cd` command.
+
+```bash
+pip install -r requirements.txt
+```
+
+We need to set our access token in gitpod:
+
+``` bash
+export ROLLBAR_ACCESS_TOKEN="YOUR_ROLLBAR_TOKEN_HERE"
+gp env ROLLBAR_ACCESS_TOKEN="YOUR_ROLLBAR_TOKEN_HERE"
+```
+
+Then, we need to add this env var to the `docker-compose.yml`. Put it in `Service -> backend-flask -> environment`:
+
+```yml
+ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"
+```
+
+Import Rollbar in `app.py`:
+
+```py
+# rollbar
+import os
+import rollbar
+import rollbar.contrib.flask
+from flask import got_request_exception
+```
+
+In the same `app.py` file, insert these lines after CORS code:
+
+```py
+# Rollbar
+rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
+@app.before_first_request
+def init_rollbar():
+    """init rollbar module"""
+    rollbar.init(
+        # access token
+        rollbar_access_token,
+        # environment name
+        'production',
+        # server root directory, makes tracebacks prettier
+        root=os.path.dirname(os.path.realpath(__file__)),
+        # flask already sets up logging
+        allow_logging_basic_config=False)
+
+    # send exceptions from `app` to rollbar, using flask's signal system.
+    got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
+
+```
+
+Finally we test with this code, you can put it nright after the last lines:
+
+```py
+# Rollbar test
+@app.route('/rollbar/test')
+def rollbar_test():
+    rollbar.report_message('Hello World!', 'warning')
+    return "Hello World!"
+```
+IMPORTANT: This is a "warning" test, so in the rollbar dashboard, you must select to show warnings on the left panel, otherwise you will not see notifications for this test.
+
+![Rollbar Dashboard](./assets/week-2-rollbar-dashboard-working-ok.png)
+
+Details of the warning and concurrencies:
+
+![Error/Warning details in Rollbar](./assets/week-2-rollbar-occurrences-ok.png)
