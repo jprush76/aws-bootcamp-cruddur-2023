@@ -22,11 +22,9 @@ export default function DesktopSidebar(props) {
   }
 
   let suggested;
-  if (props.user) {
-    suggested = <SuggestedUsersSection users={users} />
-  }
   let join;
   if (props.user) {
+    suggested = <SuggestedUsersSection users={users} />
   } else {
     join = <JoinSection />
   }
