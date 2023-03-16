@@ -14,6 +14,8 @@ from services.create_message import *
 from services.show_activity import *
 from services.notifications_activities import *
 
+from lib.cognito_jwt_token import CognitoJwtToken, extract_access_token, TokenVerifyError
+
 # Cloudwatch Logs
 # import watchtower
 # import logging
@@ -60,6 +62,12 @@ tracer = trace.get_tracer(__name__)
 
 
 app = Flask(__name__)
+
+cognito_jwt_token = CognitoJwtToken(
+  user_pool_id=os.getenv("AWS_COGNITO_USER_POOL_ID"), 
+  user_pool_client_id=os.getenv("AWS_COGNITO_USER_POOL_CLIENT_ID"),
+  region=os.getenv("AWS_DEFAULT_REGION")
+)
 
 # X-ray
 # XRayMiddleware(app, xray_recorder)
@@ -148,7 +156,17 @@ def data_create_message():
 
 @app.route("/api/activities/home", methods=['GET'])
 def data_home():
-  data = HomeActivities.run()
+  access_token = extract_access_token(request.headers)
+  try:
+    claims = cognito_jwt_token.verify(access_token)
+    app.logger.debug('authenicated')
+    app.logger.debug(claims)
+    data = HomeActivities.run(cognito_user_id=claims['username'])
+  except TokenVerifyError as e:
+    app.logger.debug(e)
+    app.logger.debug('unauthenicated')
+    data = HomeActivities.run()
+
   # data = HomeActivities.run(logger = LOGGER) // for cloudwatch
   return data, 200
 
