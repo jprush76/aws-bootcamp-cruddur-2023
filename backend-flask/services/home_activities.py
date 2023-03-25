@@ -42,5 +42,4 @@ class HomeActivities:
           # the first field being the data
           json = cur.fetchone()
       return json[0]
-
-      #return results
+      
