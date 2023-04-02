@@ -44,6 +44,7 @@ print(my_user_uuid)
 query_params = {
   'TableName': table_name,
   'KeyConditionExpression': 'pk = :pkey',
+  'ScanIndexForward': False,
   'ExpressionAttributeValues': {
     ':pkey': {'S': f"GRP#{my_user_uuid}"}
   },
